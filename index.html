@@ -153,93 +153,120 @@ button.danger{background:var(--err)}
   <button class="tabbtn" data-section="tempSection">🌡️<span>Temp</span></button>
   <button class="tabbtn" data-section="medHistorySection">💊<span>Hist.</span></button>
   <button class="tabbtn" data-section="configSection">⚙️<span>Config</span></button>
-</nav><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>
-let data = JSON.parse(localStorage.getItem('pediatricAppData')||'{}');
-if(!data.children) data.children={};
-let currentChildId=null;
-const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
-const pad=n=>String(n).padStart(2,'0');
-function save(){ localStorage.setItem('pediatricAppData', JSON.stringify(data)); }
-function genId(){ return 'id'+Date.now()+Math.random().toString(16).slice(2); }
-function fmtDT(ts){ return new Date(ts).toLocaleString(); }
-function tempClass(v){ if(v<37.5) return 'temp-normal'; if(v<38) return 'temp-febr'; return 'temp-fever'; }
-function tempColor(v){ if(v<37.5) return 'green'; if(v<38) return 'orange'; return 'red'; }
+</nav><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha256-qZ3QvE5h6Y4BvV8R4A0v2bfa6s1jpry8aYB2rS0A1wM=" crossorigin="anonymous"></script><script>
+// --- Robust init with error banner and event delegation ---
+(function(){
+  'use strict';
+  const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+  const pad=n=>String(n).padStart(2,'0');
+  const safeNum=v=>{ const s=(v??'').toString().replace(',','.'); const n=parseFloat(s); return Number.isFinite(n)?n:NaN; };
 
-// Inicial
-(function initChild(){
-  if(Object.keys(data.children).length===0){
-    const id=genId(); data.children[id]={name:'Ejemplo',weight:12.5,doses:[],temps:[]}; currentChildId=id; save();
-  } else { currentChildId=Object.keys(data.children)[0]; }
-})();
+  // Visible error surface
+  window.onerror = function(msg, src, line, col, err){
+    const div=document.createElement('div');
+    div.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;background:#fee2e2;color:#7f1d1d;padding:8px 12px;border-bottom:1px solid #fecaca;font-family:system-ui';
+    div.textContent='Error: '+msg; document.body.appendChild(div);
+  };
 
-// Header
-const childSelect=$('#childSelect');
-function refreshChildSelect(){
-  childSelect.innerHTML='';
-  for(const id in data.children){ const o=document.createElement('option'); o.value=id; o.textContent=data.children[id].name; childSelect.appendChild(o); }
-  childSelect.value=currentChildId;
-}
-refreshChildSelect();
-childSelect.addEventListener('change',()=>{ currentChildId=childSelect.value; loadChildCfg(); refreshAll(); drawTempChart(); });
+  // State
+  let data = JSON.parse(localStorage.getItem('pediatricAppData')||'{}');
+  if(!data.children) data.children={};
+  let currentChildId=null; let tempChart=null;
+  function save(){ localStorage.setItem('pediatricAppData', JSON.stringify(data)); }
+  function genId(){ return 'id'+Date.now()+Math.random().toString(16).slice(2); }
+  function fmtDT(ts){ return new Date(ts).toLocaleString(); }
+  function tempClass(v){ if(v<37.5) return 'temp-normal'; if(v<38) return 'temp-febr'; return 'temp-fever'; }
+  function tempColor(v){ if(v<37.5) return 'green'; if(v<38) return 'orange'; return 'red'; }
 
-// Tabs
-$$('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
-  $$('.tabbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
-  $$('.section').forEach(s=>s.classList.remove('active')); $('#'+b.dataset.section).classList.add('active');
-  if(b.dataset.section==='tempSection') drawTempChart();
-}));
+  // Ensure one child
+  (function initChild(){
+    const keys=Object.keys(data.children);
+    if(keys.length===0){ const id=genId(); data.children[id]={name:'Ejemplo',weight:12.5,doses:[],temps:[]}; currentChildId=id; save(); }
+    else { currentChildId=keys[0]; }
+  })();
 
-// Config hijo
-function loadChildCfg(){ const c=data.children[currentChildId]; $('#childName').value=c.name||''; $('#childWeight').value=c.weight||''; }
-loadChildCfg();
-$('#saveChildBtn').addEventListener('click',()=>{ const c=data.children[currentChildId]; c.name=$('#childName').value; c.weight=parseFloat($('#childWeight').value)||0; save(); refreshChildSelect(); alert('Datos guardados'); });
-$('#deleteChildBtn').addEventListener('click',()=>{ if(confirm('¿Eliminar este hijo?')){ delete data.children[currentChildId]; save(); if(Object.keys(data.children).length===0){ const id=genId(); data.children[id]={name:'Ejemplo',weight:12,doses:[],temps:[]}; currentChildId=id; save(); } else { currentChildId=Object.keys(data.children)[0]; } refreshChildSelect(); loadChildCfg(); refreshAll(); }});
-
-// Calculadora
-$('#calcDoseBtn').addEventListener('click',()=>{
-  const w=parseFloat($('#weightInput').value)||data.children[currentChildId].weight;
-  const med=$('#medType').value; const mg=parseFloat($('#concMg').value); const ml=parseFloat($('#concMl').value);
-  if(!w||!mg||!ml){ alert('Complete peso y concentración'); return; }
-  const conc=mg/ml; let minMg,maxMg; if(med==='Paracetamol'){ minMg=w*10; maxMg=w*15; } else { minMg=maxMg=w*10; }
-  const minMl=minMg/conc, maxMl=maxMg/conc; $('#doseResult').textContent=`${Math.round(minMg)}–${Math.round(maxMg)} mg = ${minMl.toFixed(1)}–${maxMl.toFixed(1)} ml`;
-});
-$('#saveDoseBtn').addEventListener('click',()=>{ const txt=$('#doseResult').textContent; if(!txt){ alert('Primero calcule'); return; } data.children[currentChildId].doses.unshift({time:Date.now(),info:txt}); save(); refreshMedHistory(); });
-
-// Planificador (incluye alternancia)
-function setDefaultStart(){ const now=new Date(); const m=now.getMinutes(); const r=Math.ceil(m/15)*15; now.setMinutes(r===60?0:r); if(r===60) now.setHours(now.getHours()+1); $('#planStart').value=`${pad(now.getHours())}:${pad(now.getMinutes())}`; }
-setDefaultStart();
-$('#modeSimple').addEventListener('change',()=>{ $('#simpleBox').style.display='block'; $('#altBox').style.display='none'; });
-$('#modeAlt').addEventListener('change',()=>{ $('#simpleBox').style.display='none'; $('#altBox').style.display='block'; });
-function genPlan(hours){
-  const [hh,mm]=($('#planStart').value||'08:00').split(':').map(n=>parseInt(n||'0'));
-  let t=new Date(); t.setHours(hh,mm,0,0);
-  const mode=$('input[name="planMode"]:checked').value;
-  const rows=[];
-  if(mode==='simple'){
-    const label=$('#planLabel').value||'Medicamento'; const step=parseInt($('#planInterval').value||'6');
-    for(let p=0;p<=hours;p+=step){ rows.push([`${pad(t.getHours())}:${pad(t.getMinutes())}`,label]); t.setHours(t.getHours()+step); }
-  } else {
-    let next=$('#altStart').value; const step=parseInt($('#altStep').value||'3');
-    for(let p=0;p<=hours;p+=step){ rows.push([`${pad(t.getHours())}:${pad(t.getMinutes())}`,next]); t.setHours(t.getHours()+step); next=(next==='Ibuprofeno')?'Paracetamol':'Ibuprofeno'; }
+  const childSelect=$('#childSelect');
+  function refreshChildSelect(){
+    childSelect.innerHTML='';
+    for(const id in data.children){ const o=document.createElement('option'); o.value=id; o.textContent=data.children[id].name; childSelect.appendChild(o); }
+    childSelect.value=currentChildId;
   }
-  let html='<table class="table"><thead><tr><th>Hora</th><th>Qué dar</th></tr></thead><tbody>'+
-    rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')+'</tbody></table>';
-  $('#planOutput').innerHTML=html;
-}
-$('#genPlanBtn').addEventListener('click',()=>genPlan(parseInt($('#planDuration').value||'24')));
-$('#genPlan48').addEventListener('click',()=>genPlan(48));
+  function loadChildCfg(){ const c=data.children[currentChildId]; $('#childName').value=c.name||''; $('#childWeight').value=c.weight||''; }
+  function refreshMedHistory(){ const box=$('#medHistory'); const list=data.children[currentChildId].doses; box.innerHTML='<h3>Historial de medicación</h3>'+(list.map(d=>`<div class="history-item">${fmtDT(d.time)} — ${d.info}</div>`).join('')||'<div class="small">Sin registros</div>'); }
+  function refreshTempHistory(){ const box=$('#tempHistory'); const list=data.children[currentChildId].temps; box.innerHTML='<h3>Historial de temperatura</h3>'+(list.map(t=>`<div class="history-item ${tempClass(t.value)}">${fmtDT(t.time)} — <b>${t.value.toFixed(1)}°C</b> ${t.comment?('— '+t.comment):''}</div>`).join('')||'<div class="small">Sin registros</div>'); }
+  function refreshAll(){ refreshMedHistory(); refreshTempHistory(); }
 
-// Temperatura
-$('#saveTempBtn').addEventListener('click',()=>{ const v=parseFloat($('#tempValue').value); if(!v){ alert('Ingrese temperatura'); return; } const c=$('#tempComment').value; data.children[currentChildId].temps.unshift({time:Date.now(),value:v,comment:c}); save(); $('#tempValue').value=''; $('#tempComment').value=''; refreshTempHistory(); drawTempChart(); });
+  function drawTempChart(){ try{ const el=$('#tempChart'); if(!el || typeof Chart==='undefined') return; const ctx=el.getContext('2d'); const arr=data.children[currentChildId].temps.slice().reverse(); const labels=arr.map(t=>new Date(t.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})); const vals=arr.map(t=>t.value); const colors=arr.map(t=>tempColor(t.value)); if(tempChart) tempChart.destroy(); tempChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Temperatura °C',data:vals,borderColor:'#0f172a',backgroundColor:'rgba(15,23,42,.06)',pointBackgroundColor:colors,pointRadius:4,tension:.3}]},options:{responsive:true,scales:{y:{beginAtZero:false}}}});}catch(e){/* silent */} }
 
-// Historiales
-function refreshMedHistory(){ const box=$('#medHistory'); box.innerHTML='<h3>Historial de medicación</h3>'+(data.children[currentChildId].doses.map(d=>`<div class="history-item">${fmtDT(d.time)} — ${d.info}</div>`).join('')||'<div class="small">Sin registros</div>'); }
-function refreshTempHistory(){ const list=data.children[currentChildId].temps; const box=$('#tempHistory'); box.innerHTML='<h3>Historial de temperatura</h3>'+(list.map(t=>`<div class="history-item ${tempClass(t.value)}">${fmtDT(t.time)} — <b>${t.value.toFixed(1)}°C</b> ${t.comment?('— '+t.comment):''}</div>`).join('')||'<div class="small">Sin registros</div>'); }
-function refreshAll(){ refreshMedHistory(); refreshTempHistory(); }
-refreshAll();
+  function setDefaultStart(){ const now=new Date(); const m=now.getMinutes(); const r=Math.ceil(m/15)*15; now.setMinutes(r===60?0:r); if(r===60) now.setHours(now.getHours()+1); const val=`${pad(now.getHours())}:${pad(now.getMinutes())}`; const inp=$('#planStart'); if(inp) inp.value=val; }
 
-// Chart
-let tempChart=null;
-function drawTempChart(){ const ctx=$('#tempChart').getContext('2d'); const arr=data.children[currentChildId].temps.slice().reverse(); const labels=arr.map(t=>new Date(t.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})); const vals=arr.map(t=>t.value); const colors=arr.map(t=>tempColor(t.value)); if(tempChart) tempChart.destroy(); tempChart=new Chart(ctx,{ type:'line', data:{ labels, datasets:[{ label:'Temperatura °C', data:vals, borderColor:'#0f172a', backgroundColor:'rgba(15,23,42,.06)', pointBackgroundColor:colors, pointRadius:4, tension:.3 }]}, options:{ responsive:true, plugins:{legend:{display:true}}, scales:{ y:{ beginAtZero:false } } }); }
+  // Tab switching via delegation
+  document.addEventListener('click',(ev)=>{
+    const tab=ev.target.closest('.tabbtn');
+    if(tab){ $$('.tabbtn').forEach(x=>x.classList.remove('active')); tab.classList.add('active'); $$('.section').forEach(s=>s.classList.remove('active')); const tgt=tab.dataset.section; if(tgt) $('#'+tgt).classList.add('active'); if(tgt==='tempSection') drawTempChart(); }
+
+    const act=ev.target.closest('[data-action]');
+    if(!act) return;
+    const a=act.dataset.action;
+    // Actions
+    if(a==='calc'){
+      const w = safeNum($('#weightInput').value || data.children[currentChildId].weight);
+      const mg = safeNum($('#concMg').value); const ml = safeNum($('#concMl').value);
+      const med = $('#medType').value;
+      if(!Number.isFinite(w)||!Number.isFinite(mg)||!Number.isFinite(ml)||w<=0||mg<=0||ml<=0){ alert('Complete peso y concentración (mg y ml).'); return; }
+      const conc=mg/ml; let minMg,maxMg; if(med==='Paracetamol'){minMg=w*10;maxMg=w*15;} else {minMg=maxMg=w*10;}
+      const minMl=minMg/conc, maxMl=maxMg/conc; $('#doseResult').textContent=`${Math.round(minMg)}–${Math.round(maxMg)} mg = ${minMl.toFixed(1)}–${maxMl.toFixed(1)} ml`;
+    }
+    if(a==='dose-save'){
+      const txt=$('#doseResult').textContent; if(!txt){ alert('Primero calcule la dosis'); return; }
+      data.children[currentChildId].doses.unshift({time:Date.now(),info:txt}); save(); refreshMedHistory();
+    }
+    if(a==='plan-gen' || a==='plan-48'){
+      const hours = (a==='plan-48')?48: safeNum($('#planDuration').value)||24;
+      const start=($('#planStart').value||'08:00').split(':'); let t=new Date(); t.setHours(parseInt(start[0]||'8',10), parseInt(start[1]||'0',10),0,0);
+      const mode=document.querySelector('input[name="planMode"]:checked').value;
+      const rows=[];
+      if(mode==='simple'){
+        const label=$('#planLabel').value||'Medicamento'; const step=parseInt($('#planInterval').value||'6',10);
+        for(let p=0;p<=hours;p+=step){ rows.push([`${pad(t.getHours())}:${pad(t.getMinutes())}`,label]); t.setHours(t.getHours()+step); }
+      } else {
+        let next=$('#altStart').value; const step=parseInt($('#altStep').value||'3',10);
+        for(let p=0;p<=hours;p+=step){ rows.push([`${pad(t.getHours())}:${pad(t.getMinutes())}`,next]); t.setHours(t.getHours()+step); next=(next==='Ibuprofeno')?'Paracetamol':'Ibuprofeno'; }
+      }
+      $('#planOutput').innerHTML='<table class="table"><thead><tr><th>Hora</th><th>Qué dar</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')+'</tbody></table>';
+    }
+    if(a==='temp-save'){
+      const v=safeNum($('#tempValue').value); if(!Number.isFinite(v)){ alert('Ingrese temperatura'); return; }
+      const c=$('#tempComment').value; data.children[currentChildId].temps.unshift({time:Date.now(),value:v,comment:c}); save(); $('#tempValue').value=''; $('#tempComment').value=''; refreshTempHistory(); drawTempChart();
+    }
+    if(a==='child-save'){
+      const c=data.children[currentChildId]; c.name=$('#childName').value; c.weight=safeNum($('#childWeight').value)||0; save(); refreshChildSelect(); alert('Datos guardados');
+    }
+    if(a==='child-del'){
+      if(confirm('¿Eliminar este hijo?')){ delete data.children[currentChildId]; save(); const keys=Object.keys(data.children); if(keys.length===0){ const id=genId(); data.children[id]={name:'Ejemplo',weight:12,doses:[],temps:[]}; currentChildId=id; save(); } else { currentChildId=keys[0]; } refreshChildSelect(); loadChildCfg(); refreshAll(); drawTempChart(); }
+    }
+  });
+
+  // Toggle mode boxes
+  $('#modeSimple').addEventListener('change',()=>{ $('#simpleBox').style.display='block'; $('#altBox').style.display='none'; });
+  $('#modeAlt').addEventListener('change',()=>{ $('#simpleBox').style.display='none'; $('#altBox').style.display='block'; });
+
+  // Select change
+  $('#childSelect').addEventListener('change',()=>{ currentChildId=$('#childSelect').value; loadChildCfg(); refreshAll(); drawTempChart(); });
+
+  // Assign data-action attributes to buttons (in case cached HTML old)
+  $('#calcDoseBtn')?.setAttribute('data-action','calc');
+  $('#saveDoseBtn')?.setAttribute('data-action','dose-save');
+  $('#genPlanBtn')?.setAttribute('data-action','plan-gen');
+  $('#genPlan48')?.setAttribute('data-action','plan-48');
+  $('#saveTempBtn')?.setAttribute('data-action','temp-save');
+  $('#saveChildBtn')?.setAttribute('data-action','child-save');
+  $('#deleteChildBtn')?.setAttribute('data-action','child-del');
+
+  function refreshAll(){ refreshMedHistory(); refreshTempHistory(); }
+
+  // Initial render
+  refreshChildSelect(); loadChildCfg(); refreshAll(); setDefaultStart(); drawTempChart();
+})();
 </script></body>
 </html>
