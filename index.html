@@ -1,0 +1,63 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora y Planificador de Dosis Pediátrica</title>
+  <style>
+    body{font-family:sans-serif;background:#f4f4f4;margin:0;padding:0;color:#222}
+    .container{max-width:900px;margin:auto;padding:20px}
+    h1,h2{color:#333}
+    .card{background:#fff;padding:20px;margin-bottom:20px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+    label{display:block;margin-top:10px}
+    input,select,button{padding:8px;margin-top:4px;width:100%;box-sizing:border-box}
+    button{cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:4px;margin-top:10px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px;border:1px solid #ccc;text-align:center}
+  </style>
+</head>
+<body>
+<div class="container">
+<h1>Calculadora de Dosis Pediátrica</h1>
+<div class="card">
+  <label>Peso (kg)</label>
+  <input type="number" id="peso" step="0.1"><label>Medicamento</label> <select id="med"> <option value="paracetamol">Paracetamol (10-15 mg/kg)</option> <option value="ibuprofeno">Ibuprofeno (10 mg/kg)</option> </select>
+
+<label>Concentración (mg por ml)</label> <input type="number" id="conc" step="0.1">
+
+<button onclick="calcDosis()">Calcular dosis</button>
+
+  <div id="resultado"></div>
+</div><h2>Planificador de Horarios</h2>
+<div class="card">
+  <label>Modo</label>
+  <select id="modo">
+    <option value="simple">Un solo medicamento</option>
+    <option value="alternar">Alternar Paracetamol/Ibuprofeno</option>
+  </select><label>Hora de inicio</label> <input type="time" id="horaInicio" value="08:00">
+
+  <div id="intervalos">
+    <label>Intervalo (horas) - Medicamento único</label>
+    <input type="number" id="intervalo" value="6">
+  </div><label>Duración del plan (horas)</label> <input type="number" id="duracion" value="24">
+
+<button onclick="planificar()">Generar plan</button>
+
+  <div id="tablaPlan"></div>
+</div>
+</div>
+<script>
+function calcDosis(){
+  const peso=parseFloat(document.getElementById('peso').value);
+  const med=document.getElementById('med').value;
+  const conc=parseFloat(document.getElementById('conc').value);
+  if(!peso||!conc){document.getElementById('resultado').innerHTML='<p>Complete todos los campos.</p>';return;}
+  let minMg,maxMg;
+  if(med==='paracetamol'){minMg=10*peso;maxMg=15*peso;}
+  if(med==='ibuprofeno'){minMg=maxMg=10*peso;}
+  const minMl=(minMg/conc).toFixed(2);
+  const maxMl=(maxMg/conc).toFixed(2);
+  document.getElementById('resultado').innerHTML=`<p>Dosis: ${minMg.toFixed(0)} - ${maxMg.toFixed(0)} mg (${minMl} - ${maxMl} ml)</p>`;
+}function planificar(){ const modo=document.getElementById('modo').value; const horaInicio=document.getElementById('horaInicio').value; const duracion=parseInt(document.getElementById('duracion').value); let html='<table><tr><th>Hora</th><th>Medicamento</th></tr>'; let [h,m]=horaInicio.split(':').map(Number); let horaActual=new Date(); horaActual.setHours(h,m,0,0); if(modo==='simple'){ const intervalo=parseInt(document.getElementById('intervalo').value); for(let t=0;t<=duracion;t+=intervalo){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>Medicamento</td></tr>; horaActual.setHours(horaActual.getHours()+intervalo); } } else { // alternar paracetamol cada 4h e ibuprofeno cada 6h, intercalado cada 3h let turnoParacetamol=true; for(let t=0;t<=duracion;t+=3){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>${turnoParacetamol?"Paracetamol":"Ibuprofeno"}</td></tr>; horaActual.setHours(horaActual.getHours()+3); turnoParacetamol=!turnoParacetamol; } } html+='</table>'; document.getElementById('tablaPlan').innerHTML=html; } </script>
+
+</body>
+</html>
