@@ -4,70 +4,158 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora y Planificador de Dosis Pediátrica</title>
   <style>
-    body{font-family:sans-serif;background:#f4f4f4;margin:0;padding:0;color:#222}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:#f6f7fb;margin:0;color:#222}
     .container{max-width:900px;margin:auto;padding:20px}
-    h1,h2{color:#333}
-    .card{background:#fff;padding:20px;margin-bottom:20px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
-    label{display:block;margin-top:10px}
-    input,select,button{padding:8px;margin-top:4px;width:100%;box-sizing:border-box}
-    button{cursor:pointer;background:#007bff;color:#fff;border:none;border-radius:4px;margin-top:10px}
+    h1,h2{color:#111;margin:10px 0}
+    .card{background:#fff;padding:16px;margin-bottom:16px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid #e8e8ef}
+    label{display:block;margin-top:10px;font-size:.95rem}
+    input,select,button{padding:12px;margin-top:6px;width:100%;box-sizing:border-box;border-radius:10px;border:1px solid #d8dbe6;background:#fff;font-size:1rem}
+    button{cursor:pointer;background:#2563eb;color:#fff;border:none;font-weight:600}
+    button.secondary{background:#0f172a;color:#fff}
+    .row{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:720px){.row{grid-template-columns:repeat(2,1fr)}}
     table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:8px;border:1px solid #ccc;text-align:center}
+    th,td{padding:8px;border:1px solid #e5e7eb;text-align:center}
+    .muted{color:#6b7280;font-size:.9rem}
+    .error{background:#fff1f2;color:#991b1b;border:1px solid #fecaca;padding:10px;border-radius:10px;margin-top:10px}
+    .ok{background:#f0fdf4;color:#065f46;border:1px solid #bbf7d0;padding:10px;border-radius:10px;margin-top:10px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{padding:6px 10px;border-radius:999px;border:1px solid #d1d5db;background:#f9fafb;font-size:.9rem;cursor:pointer}
   </style>
 </head>
 <body>
 <div class="container">
 <h1>Calculadora de Dosis Pediátrica</h1>
 <div class="card">
-  <label>Peso (kg)</label>
-  <input type="number" id="peso" step="0.1"><label>Medicamento</label> <select id="med"> <option value="paracetamol">Paracetamol (10-15 mg/kg)</option> <option value="ibuprofeno">Ibuprofeno (10 mg/kg)</option> </select>
+  <div class="row">
+    <div>
+      <label for="peso">Peso (kg)</label>
+      <input type="number" id="peso" step="0.1" inputmode="decimal" placeholder="Ej: 12"/>
+    </div>
+    <div>
+      <label for="med">Medicamento</label>
+      <select id="med">
+        <option value="paracetamol">Paracetamol (10–15 mg/kg)</option>
+        <option value="ibuprofeno">Ibuprofeno (10 mg/kg)</option>
+      </select>
+    </div>
+  </div><label>Concentración (tal cual envase)</label>
 
-<label>Concentración</label>
-
-  <div style="display:flex;gap:4px">
-    <input type="number" id="mgTotal" placeholder="mg (ej: 100)">
-    <span style="align-self:center">mg /</span>
-    <input type="number" id="mlTotal" placeholder="ml (ej: 5)">
-    <span style="align-self:center">ml</span>
-  </div><button onclick="calcDosis()">Calcular dosis</button>
-
+  <div class="row">
+    <div>
+      <label for="mgTotal" class="muted">Miligramos</label>
+      <input type="number" id="mgTotal" inputmode="numeric" placeholder="Ej: 100"/>
+    </div>
+    <div>
+      <label for="mlTotal" class="muted">Mililitros</label>
+      <input type="number" id="mlTotal" inputmode="decimal" placeholder="Ej: 5"/>
+    </div>
+  </div>
+  <div class="muted" style="margin-top:6px">Ejemplos rápidos: <span class="chips">
+    <span class="chip" data-mg="100" data-ml="5">100 mg / 5 ml</span>
+    <span class="chip" data-mg="160" data-ml="5">160 mg / 5 ml</span>
+    <span class="chip" data-mg="200" data-ml="5">200 mg / 5 ml</span>
+  </span></div>  <div class="row" style="margin-top:8px">
+    <button id="btnCalc">Calcular dosis</button>
+    <button id="btnDemo" class="secondary">Cargar ejemplo (12 kg, 100/5)</button>
+  </div>
   <div id="resultado"></div>
 </div><h2>Planificador de Horarios</h2>
 <div class="card">
-  <label>Modo</label>
+  <label for="modo">Modo</label>
   <select id="modo">
     <option value="simple">Un solo medicamento</option>
-    <option value="alternar">Alternar Paracetamol/Ibuprofeno</option>
-  </select><label>Hora de inicio</label> <input type="time" id="horaInicio" value="08:00">
+    <option value="alternar">Alternar Paracetamol ↔ Ibuprofeno</option>
+  </select><label for="horaInicio">Hora de inicio</label> <input type="time" id="horaInicio" value="08:00">
 
   <div id="intervalos">
-    <label>Intervalo (horas) - Medicamento único</label>
-    <input type="number" id="intervalo" value="6">
-  </div><label>Duración del plan (horas)</label> <input type="number" id="duracion" value="24">
+    <label for="intervalo">Intervalo (horas) – Medicamento único</label>
+    <input type="number" id="intervalo" value="6" inputmode="numeric">
+  </div><label for="duracion">Duración del plan (horas)</label> <input type="number" id="duracion" value="24" inputmode="numeric">
 
-<button onclick="planificar()">Generar plan</button>
-
+  <div class="row" style="margin-top:8px">
+    <button id="btnPlan">Generar plan</button>
+    <button id="btnPlan48" class="secondary">Plan 48 h</button>
+  </div>
+  <div class="muted">En alternancia, se muestra cada 3 h intercalando: 08:00 Ibu → 11:00 Para → 14:00 Ibu …</div>
   <div id="tablaPlan"></div>
 </div>
 </div>
 <script>
-function calcDosis(){
-  const peso=parseFloat(document.getElementById('peso').value);
-  const med=document.getElementById('med').value;
-  const mgTotal=parseFloat(document.getElementById('mgTotal').value);
-  const mlTotal=parseFloat(document.getElementById('mlTotal').value);
-  if(!peso||!mgTotal||!mlTotal){
-    document.getElementById('resultado').innerHTML='<p>Complete todos los campos.</p>';
+(function(){
+  const $ = sel => document.querySelector(sel);
+  const peso = $('#peso');
+  const med = $('#med');
+  const mgTotal = $('#mgTotal');
+  const mlTotal = $('#mlTotal');
+  const resultado = $('#resultado');
+  const modo = $('#modo');
+  const horaInicio = $('#horaInicio');
+  const intervalo = $('#intervalo');
+  const duracion = $('#duracion');
+  const tablaPlan = $('#tablaPlan');// Relleno rápido por chips document.querySelectorAll('.chip').forEach(ch=>{ ch.addEventListener('click',()=>{ mgTotal.value = ch.dataset.mg; mlTotal.value = ch.dataset.ml; }); });
+
+// Botones $('#btnDemo').addEventListener('click',()=>{ peso.value = '12'; med.value='paracetamol'; mgTotal.value='100'; mlTotal.value='5'; });
+
+$('#btnCalc').addEventListener('click', calcDosis); $('#btnPlan').addEventListener('click', ()=> planificar(parseInt(duracion.value||'24',10)) ); $('#btnPlan48').addEventListener('click', ()=> planificar(48) );
+
+function safeNumber(x){ // Usar valueAsNumber si existe (mejor en móviles con coma) if (typeof x.valueAsNumber === 'number' && !Number.isNaN(x.valueAsNumber)) return x.valueAsNumber; const v = (x.value||'').toString().replace(',','.'); const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; }
+
+function calcDosis(){ try{ const w = safeNumber(peso); const drug = med.value; const mg = safeNumber(mgTotal); const ml = safeNumber(mlTotal);
+
+if(!Number.isFinite(w) || !Number.isFinite(mg) || !Number.isFinite(ml) || w<=0 || mg<=0 || ml<=0){
+    resultado.innerHTML = '<div class="error">Completá peso y concentración (ej: 100 mg / 5 ml).</div>';
     return;
   }
-  const conc = mgTotal / mlTotal; // cálculo automático de mg por ml
-  let minMg,maxMg;
-  if(med==='paracetamol'){minMg=10*peso;maxMg=15*peso;}
-  if(med==='ibuprofeno'){minMg=maxMg=10*peso;}
-  const minMl=(minMg/conc).toFixed(2);
-  const maxMl=(maxMg/conc).toFixed(2);
-  document.getElementById('resultado').innerHTML=`<p>Dosis: ${minMg.toFixed(0)} - ${maxMg.toFixed(0)} mg (${minMl} - ${maxMl} ml)</p>`;
-}function planificar(){ const modo=document.getElementById('modo').value; const horaInicio=document.getElementById('horaInicio').value; const duracion=parseInt(document.getElementById('duracion').value); let html='<table><tr><th>Hora</th><th>Medicamento</th></tr>'; let [h,m]=horaInicio.split(':').map(Number); let horaActual=new Date(); horaActual.setHours(h,m,0,0); if(modo==='simple'){ const intervalo=parseInt(document.getElementById('intervalo').value); for(let t=0;t<=duracion;t+=intervalo){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>Medicamento</td></tr>; horaActual.setHours(horaActual.getHours()+intervalo); } } else { let turnoParacetamol=true; for(let t=0;t<=duracion;t+=3){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>${turnoParacetamol?"Paracetamol":"Ibuprofeno"}</td></tr>; horaActual.setHours(horaActual.getHours()+3); turnoParacetamol=!turnoParacetamol; } } html+='</table>'; document.getElementById('tablaPlan').innerHTML=html; } </script>
+  const conc = mg / ml; // mg por ml automáticamente
+  let minMg, maxMg;
+  if (drug === 'paracetamol'){ minMg = 10*w; maxMg = 15*w; }
+  if (drug === 'ibuprofeno'){ minMg = maxMg = 10*w; }
+
+  const minMl = minMg/conc; const maxMl = maxMg/conc;
+  const fmt = x => (Math.round(x*10)/10).toFixed(1);
+
+  resultado.innerHTML = `
+    <div class="ok">
+      <div><b>Dosis por toma:</b> ${Math.round(minMg)}${(minMg!==maxMg)?'–'+Math.round(maxMg):''} mg
+        (${fmt(minMl)}${(minMl!==maxMl)?'–'+fmt(maxMl):''} ml)</div>
+      <div class="muted">Concentración: ${mg} mg / ${ml} ml → ${fmt(conc)} mg/ml</div>
+    </div>`;
+}catch(e){
+  resultado.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+}
+
+}
+
+function planificar(horas){ try{ const mode = modo.value; const dur = Number.isFinite(horas)? horas : 24; const start = (horaInicio.value||'08:00'); const parts = start.split(':'); const h = parseInt(parts[0]||'8',10), m = parseInt(parts[1]||'0',10); let t = new Date(); t.setHours(h,m,0,0);
+
+let rows = [];
+  if(mode==='simple'){
+    const step = parseInt(intervalo.value||'6',10);
+    for(let passed=0; passed<=dur; passed+=step){
+      rows.push([fmtTime(t), 'Medicamento']);
+      t.setHours(t.getHours()+step);
+    }
+  } else {
+    // Alternancia: cada 3 horas, intercalando Paracetamol ↔ Ibuprofeno
+    let paracetamol = true;
+    for(let passed=0; passed<=dur; passed+=3){
+      rows.push([fmtTime(t), paracetamol? 'Paracetamol' : 'Ibuprofeno']);
+      t.setHours(t.getHours()+3);
+      paracetamol = !paracetamol;
+    }
+  }
+
+  let html = '<table><thead><tr><th>Hora</th><th>Medicamento</th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')+ '</tbody></table>';
+  tablaPlan.innerHTML = html;
+}catch(e){
+  tablaPlan.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+}
+
+}
+
+function fmtTime(date){ const hh = String(date.getHours()).padStart(2,'0'); const mm = String(date.getMinutes()).padStart(2,'0'); return ${hh}:${mm}; } })(); </script>
 
 </body>
 </html>
