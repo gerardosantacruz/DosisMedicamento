@@ -22,9 +22,14 @@
   <label>Peso (kg)</label>
   <input type="number" id="peso" step="0.1"><label>Medicamento</label> <select id="med"> <option value="paracetamol">Paracetamol (10-15 mg/kg)</option> <option value="ibuprofeno">Ibuprofeno (10 mg/kg)</option> </select>
 
-<label>Concentración (mg por ml)</label> <input type="number" id="conc" step="0.1">
+<label>Concentración</label>
 
-<button onclick="calcDosis()">Calcular dosis</button>
+  <div style="display:flex;gap:4px">
+    <input type="number" id="mgTotal" placeholder="mg (ej: 100)">
+    <span style="align-self:center">mg /</span>
+    <input type="number" id="mlTotal" placeholder="ml (ej: 5)">
+    <span style="align-self:center">ml</span>
+  </div><button onclick="calcDosis()">Calcular dosis</button>
 
   <div id="resultado"></div>
 </div><h2>Planificador de Horarios</h2>
@@ -49,15 +54,20 @@
 function calcDosis(){
   const peso=parseFloat(document.getElementById('peso').value);
   const med=document.getElementById('med').value;
-  const conc=parseFloat(document.getElementById('conc').value);
-  if(!peso||!conc){document.getElementById('resultado').innerHTML='<p>Complete todos los campos.</p>';return;}
+  const mgTotal=parseFloat(document.getElementById('mgTotal').value);
+  const mlTotal=parseFloat(document.getElementById('mlTotal').value);
+  if(!peso||!mgTotal||!mlTotal){
+    document.getElementById('resultado').innerHTML='<p>Complete todos los campos.</p>';
+    return;
+  }
+  const conc = mgTotal / mlTotal; // cálculo automático de mg por ml
   let minMg,maxMg;
   if(med==='paracetamol'){minMg=10*peso;maxMg=15*peso;}
   if(med==='ibuprofeno'){minMg=maxMg=10*peso;}
   const minMl=(minMg/conc).toFixed(2);
   const maxMl=(maxMg/conc).toFixed(2);
   document.getElementById('resultado').innerHTML=`<p>Dosis: ${minMg.toFixed(0)} - ${maxMg.toFixed(0)} mg (${minMl} - ${maxMl} ml)</p>`;
-}function planificar(){ const modo=document.getElementById('modo').value; const horaInicio=document.getElementById('horaInicio').value; const duracion=parseInt(document.getElementById('duracion').value); let html='<table><tr><th>Hora</th><th>Medicamento</th></tr>'; let [h,m]=horaInicio.split(':').map(Number); let horaActual=new Date(); horaActual.setHours(h,m,0,0); if(modo==='simple'){ const intervalo=parseInt(document.getElementById('intervalo').value); for(let t=0;t<=duracion;t+=intervalo){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>Medicamento</td></tr>; horaActual.setHours(horaActual.getHours()+intervalo); } } else { // alternar paracetamol cada 4h e ibuprofeno cada 6h, intercalado cada 3h let turnoParacetamol=true; for(let t=0;t<=duracion;t+=3){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>${turnoParacetamol?"Paracetamol":"Ibuprofeno"}</td></tr>; horaActual.setHours(horaActual.getHours()+3); turnoParacetamol=!turnoParacetamol; } } html+='</table>'; document.getElementById('tablaPlan').innerHTML=html; } </script>
+}function planificar(){ const modo=document.getElementById('modo').value; const horaInicio=document.getElementById('horaInicio').value; const duracion=parseInt(document.getElementById('duracion').value); let html='<table><tr><th>Hora</th><th>Medicamento</th></tr>'; let [h,m]=horaInicio.split(':').map(Number); let horaActual=new Date(); horaActual.setHours(h,m,0,0); if(modo==='simple'){ const intervalo=parseInt(document.getElementById('intervalo').value); for(let t=0;t<=duracion;t+=intervalo){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>Medicamento</td></tr>; horaActual.setHours(horaActual.getHours()+intervalo); } } else { let turnoParacetamol=true; for(let t=0;t<=duracion;t+=3){ let hora=horaActual.getHours().toString().padStart(2,'0')+":"+horaActual.getMinutes().toString().padStart(2,'0'); html+=<tr><td>${hora}</td><td>${turnoParacetamol?"Paracetamol":"Ibuprofeno"}</td></tr>; horaActual.setHours(horaActual.getHours()+3); turnoParacetamol=!turnoParacetamol; } } html+='</table>'; document.getElementById('tablaPlan').innerHTML=html; } </script>
 
 </body>
 </html>
