@@ -1,347 +1,245 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Control de Fiebre y Medicación Pediátrica</title>
 <style>
-:root {
-  --color-bg: #f9fafb;
-  --color-card: #ffffff;
-  --color-text: #111827;
-  --color-muted: #6b7280;
-  --color-primary: #2563eb;
-  --color-success: #16a34a;
-  --color-warning: #facc15;
-  --color-danger: #dc2626;
-  --color-border: #e5e7eb;
+:root{
+  --bg:#f7f8fb;--card:#fff;--ink:#0f172a;--muted:#6b7280;--line:#e5e7eb;--pri:#2563eb;--ok:#16a34a;--warn:#f59e0b;--err:#dc2626;
 }
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-header {
-  padding: 10px;
-  background: var(--color-primary);
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-header select, header button {
-  padding: 5px;
-  border-radius: 5px;
-  border: none;
-}
-.container { padding: 10px; }
-.card {
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 15px;
-  margin-bottom: 15px;
-}
-label { display: block; margin-top: 10px; font-size: 0.9rem; }
-input, select, button, textarea {
-  width: 100%;
-  padding: 8px;
-  margin-top: 4px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
-  font-size: 1rem;
-}
-button {
-  background: var(--color-primary);
-  color: white;
-  font-weight: bold;
-  border: none;
-  cursor: pointer;
-}
-button.danger { background: var(--color-danger); }
-button.success { background: var(--color-success); }
-.tabs {
-  position: fixed;
-  bottom: 0;
-  left: 0; right: 0;
-  display: flex;
-  background: var(--color-card);
-  border-top: 1px solid var(--color-border);
-}
-.tabs button {
-  flex: 1;
-  padding: 10px;
-  background: none;
-  border: none;
-  font-size: 0.9rem;
-}
-.tabs button.active {
-  background: var(--color-primary);
-  color: white;
-}
-.section { display: none; }
-.section.active { display: block; }
-.history-item {
-  border-bottom: 1px solid var(--color-border);
-  padding: 5px;
-  border-radius: 5px;
-  margin-bottom: 5px;
-}
-.chart-container { position: relative; height: 200px; }
-.temp-normal { background-color: var(--color-success); color: white; }
-.temp-febr { background-color: var(--color-warning); }
-.temp-fever { background-color: var(--color-danger); color: white; }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+header{position:sticky;top:0;z-index:20;background:var(--pri);color:#fff;padding:12px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+header .right{display:flex;gap:8px;align-items:center}
+header select,header button{border:none;border-radius:10px;padding:8px 10px}
+header select{background:#ffffff; color:#0f172a}
+header button{background:#0f172a;color:#fff}
+.container{max-width:960px;margin:0 auto;padding:14px;padding-bottom:88px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0;box-shadow:0 2px 12px rgba(15,23,42,.06)}
+label{display:block;margin-top:8px;font-size:.95rem}
+input,select,textarea,button{width:100%;padding:12px;margin-top:6px;border-radius:10px;border:1px solid var(--line);font-size:1rem;background:#fff}
+button{background:var(--pri);color:#fff;font-weight:700;border:none;cursor:pointer}
+button.success{background:var(--ok)}
+button.danger{background:var(--err)}
+.row{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:720px){.row{grid-template-columns:repeat(2,1fr)}}
+.history-item{border:1px solid var(--line);border-radius:10px;padding:8px;margin:6px 0}
+.chart-container{position:relative;height:220px}
+.temp-normal{background:#dcfce7}
+.temp-febr{background:#fef9c3}
+.temp-fever{background:#fee2e2}
+/* Tabs inferiores mejoradas */
+.tabs{position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);gap:0;padding:6px env(safe-area-inset-right) calc(6px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
+.tabbtn{appearance:none;background:transparent;border:none;padding:10px 4px;font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px}
+.tabbtn.active{color:#fff;background:var(--pri);border-radius:12px}
+.tabbtn span{font-size:.8rem}
+.section{display:none}
+.section.active{display:block}
+.small{font-size:.85rem;color:var(--muted)}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid var(--line);padding:8px;text-align:center}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:#f9fafb;font-size:.8rem}
 </style>
 </head>
 <body>
 <header>
-  <div><strong>Control Pediátrico</strong></div>
-  <div>
+  <div style="font-weight:800">Control Pediátrico</div>
+  <div class="right">
     <select id="childSelect"></select>
     <button id="manageChildrenBtn">👤</button>
   </div>
 </header>
-
-<div class="container">
-
-  <!-- Calculadora -->
-  <div class="section" id="calcSection">
+<div class="container">  <!-- CALCULADORA -->  <section id="calcSection" class="section active">
     <div class="card">
       <h3>Calculadora de dosis</h3>
-      <label>Peso (kg)</label>
-      <input type="number" id="weightInput" step="0.1">
-      <label>Medicamento</label>
-      <select id="medType">
-        <option value="Paracetamol">Paracetamol</option>
-        <option value="Ibuprofeno">Ibuprofeno</option>
-      </select>
-      <label>Concentración</label>
-      <input type="number" id="concMg" placeholder="mg">
-      <input type="number" id="concMl" placeholder="ml">
-      <button id="calcDoseBtn">Calcular</button>
-      <div id="doseResult"></div>
-      <button id="saveDoseBtn" class="success">Registrar dosis</button>
+      <div class="row">
+        <div>
+          <label for="weightInput">Peso (kg)</label>
+          <input type="number" id="weightInput" step="0.1" inputmode="decimal" placeholder="Ej: 12.5" />
+        </div>
+        <div>
+          <label for="medType">Medicamento</label>
+          <select id="medType">
+            <option value="Paracetamol">Paracetamol</option>
+            <option value="Ibuprofeno">Ibuprofeno</option>
+          </select>
+        </div>
+      </div>
+      <label>Concentración (tal como envase)</label>
+      <div class="row">
+        <div><label class="small">mg</label><input type="number" id="concMg" placeholder="Ej: 100" inputmode="numeric"/></div>
+        <div><label class="small">ml</label><input type="number" id="concMl" placeholder="Ej: 5" inputmode="decimal"/></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="calcDoseBtn">Calcular</button>
+        <button id="saveDoseBtn" class="success">Registrar dosis</button>
+      </div>
+      <div id="doseResult" class="small" style="margin-top:8px"></div>
     </div>
-  </div>
-
-  <!-- Planificador -->
-  <div class="section" id="planSection">
+  </section>  <!-- PLANIFICADOR con alternancia -->  <section id="planSection" class="section">
     <div class="card">
       <h3>Planificador de tomas</h3>
-      <label>Hora de inicio</label>
-      <input type="time" id="planStart">
-      <label>Intervalo (horas)</label>
-      <input type="number" id="planInterval" value="6">
-      <button id="genPlanBtn">Generar plan</button>
-      <div id="planOutput"></div>
+      <label for="planStart">Hora de inicio</label>
+      <input type="time" id="planStart" /><label>Modo</label>
+  <div class="row">
+    <div>
+      <input type="radio" name="planMode" id="modeSimple" value="simple" checked />
+      <label for="modeSimple">Un solo medicamento</label>
+      <div id="simpleBox">
+        <label for="planLabel" class="small">Nombre</label>
+        <input id="planLabel" type="text" placeholder="Ej: Ibuprofeno" />
+        <label for="planInterval" class="small">Intervalo (horas)</label>
+        <input id="planInterval" type="number" inputmode="numeric" value="6" />
+      </div>
+    </div>
+    <div>
+      <input type="radio" name="planMode" id="modeAlt" value="alt" />
+      <label for="modeAlt">Alternar</label>
+      <div id="altBox" style="display:none">
+        <label for="altStart" class="small">Empieza con</label>
+        <select id="altStart">
+          <option>Ibuprofeno</option>
+          <option>Paracetamol</option>
+        </select>
+        <label for="altStep" class="small">Separación (horas)</label>
+        <input id="altStep" type="number" inputmode="numeric" value="3" />
+        <div class="small">Sugerencia: 3 h → cada med queda cada 6 h.</div>
+      </div>
     </div>
   </div>
 
-  <!-- Temperatura -->
-  <div class="section" id="tempSection">
+  <label for="planDuration">Duración (horas)</label>
+  <input id="planDuration" type="number" inputmode="numeric" value="24" />
+
+  <div class="row" style="margin-top:8px">
+    <button id="genPlanBtn">Generar plan</button>
+    <button id="genPlan48" class="badge">48 h</button>
+  </div>
+  <div id="planOutput" style="margin-top:8px"></div>
+</div>
+
+  </section>  <!-- TEMPERATURA -->  <section id="tempSection" class="section">
     <div class="card">
       <h3>Registro de temperatura</h3>
-      <label>Temperatura (°C)</label>
-      <input type="number" id="tempValue" step="0.1">
-      <label>Comentario</label>
-      <textarea id="tempComment"></textarea>
+      <label for="tempValue">Temperatura (°C)</label>
+      <input id="tempValue" type="number" step="0.1" inputmode="decimal" />
+      <label for="tempComment">Comentario</label>
+      <textarea id="tempComment" rows="2"></textarea>
       <button id="saveTempBtn" class="success">Guardar</button>
     </div>
     <div class="card">
       <h4>Evolución</h4>
-      <div class="chart-container">
-        <canvas id="tempChart"></canvas>
-      </div>
+      <div class="chart-container"><canvas id="tempChart"></canvas></div>
     </div>
     <div class="card" id="tempHistory"></div>
-  </div>
-
-  <!-- Historial Medicación -->
-  <div class="section" id="medHistorySection">
+  </section>  <!-- HISTORIAL MEDICACIÓN -->  <section id="medHistorySection" class="section">
     <div class="card" id="medHistory"></div>
-  </div>
-
-  <!-- Configuración -->
-  <div class="section" id="configSection">
+  </section>  <!-- CONFIGURACIÓN -->  <section id="configSection" class="section">
     <div class="card">
       <h3>Configuración del hijo</h3>
-      <label>Nombre</label>
-      <input type="text" id="childName">
-      <label>Peso (kg)</label>
-      <input type="number" id="childWeight" step="0.1">
-      <button id="saveChildBtn" class="success">Guardar</button>
-      <button id="deleteChildBtn" class="danger">Eliminar hijo</button>
+      <label for="childName">Nombre</label>
+      <input id="childName" type="text" />
+      <label for="childWeight">Peso (kg)</label>
+      <input id="childWeight" type="number" step="0.1" inputmode="decimal" />
+      <div class="row" style="margin-top:8px">
+        <button id="saveChildBtn" class="success">Guardar</button>
+        <button id="deleteChildBtn" class="danger">Eliminar hijo</button>
+      </div>
     </div>
-  </div>
+  </section></div><!-- Tabs inferiores --><nav class="tabs">
+  <button class="tabbtn active" data-section="calcSection">📏<span>Calculadora</span></button>
+  <button class="tabbtn" data-section="planSection">🗓️<span>Plan</span></button>
+  <button class="tabbtn" data-section="tempSection">🌡️<span>Temp</span></button>
+  <button class="tabbtn" data-section="medHistorySection">💊<span>Hist.</span></button>
+  <button class="tabbtn" data-section="configSection">⚙️<span>Config</span></button>
+</nav><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script>
+let data = JSON.parse(localStorage.getItem('pediatricAppData')||'{}');
+if(!data.children) data.children={};
+let currentChildId=null;
+const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+const pad=n=>String(n).padStart(2,'0');
+function save(){ localStorage.setItem('pediatricAppData', JSON.stringify(data)); }
+function genId(){ return 'id'+Date.now()+Math.random().toString(16).slice(2); }
+function fmtDT(ts){ return new Date(ts).toLocaleString(); }
+function tempClass(v){ if(v<37.5) return 'temp-normal'; if(v<38) return 'temp-febr'; return 'temp-fever'; }
+function tempColor(v){ if(v<37.5) return 'green'; if(v<38) return 'orange'; return 'red'; }
 
-</div>
-
-<div class="tabs">
-  <button data-section="calcSection" class="active">Calculadora</button>
-  <button data-section="planSection">Planificador</button>
-  <button data-section="tempSection">Temperatura</button>
-  <button data-section="medHistorySection">Historial Med.</button>
-  <button data-section="configSection">Config.</button>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-let data = JSON.parse(localStorage.getItem("pediatricAppData") || "{}");
-if (!data.children) data.children = {};
-let currentChildId = null;
-function saveData() { localStorage.setItem("pediatricAppData", JSON.stringify(data)); }
-function genId() { return "id" + Date.now() + Math.random().toString(16).slice(2); }
-function formatDateTime(ts) { return new Date(ts).toLocaleString(); }
-function tempClass(temp){
-  if(temp < 37.5) return "temp-normal";
-  if(temp < 38) return "temp-febr";
-  return "temp-fever";
-}
-function tempColor(temp){
-  if(temp < 37.5) return "green";
-  if(temp < 38) return "yellow";
-  return "red";
-}
-function ensureExampleChild(){
+// Inicial
+(function initChild(){
   if(Object.keys(data.children).length===0){
-    const id = genId();
-    data.children[id]={name:"Ejemplo",weight:12,doses:[],temps:[]};
-    currentChildId = id; saveData();
-  }
-}
-ensureExampleChild();
-const childSelect = document.getElementById("childSelect");
+    const id=genId(); data.children[id]={name:'Ejemplo',weight:12.5,doses:[],temps:[]}; currentChildId=id; save();
+  } else { currentChildId=Object.keys(data.children)[0]; }
+})();
+
+// Header
+const childSelect=$('#childSelect');
 function refreshChildSelect(){
-  childSelect.innerHTML="";
-  for(let id in data.children){
-    const opt=document.createElement("option");
-    opt.value=id; opt.textContent=data.children[id].name;
-    childSelect.appendChild(opt);
-  }
-  if(!currentChildId) currentChildId=Object.keys(data.children)[0];
+  childSelect.innerHTML='';
+  for(const id in data.children){ const o=document.createElement('option'); o.value=id; o.textContent=data.children[id].name; childSelect.appendChild(o); }
   childSelect.value=currentChildId;
 }
 refreshChildSelect();
-childSelect.addEventListener("change",()=>{
-  currentChildId=childSelect.value;
-  loadChildConfig(); refreshHistories(); drawTempChart();
+childSelect.addEventListener('change',()=>{ currentChildId=childSelect.value; loadChildCfg(); refreshAll(); drawTempChart(); });
+
+// Tabs
+$$('.tabbtn').forEach(b=>b.addEventListener('click',()=>{
+  $$('.tabbtn').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  $$('.section').forEach(s=>s.classList.remove('active')); $('#'+b.dataset.section).classList.add('active');
+  if(b.dataset.section==='tempSection') drawTempChart();
+}));
+
+// Config hijo
+function loadChildCfg(){ const c=data.children[currentChildId]; $('#childName').value=c.name||''; $('#childWeight').value=c.weight||''; }
+loadChildCfg();
+$('#saveChildBtn').addEventListener('click',()=>{ const c=data.children[currentChildId]; c.name=$('#childName').value; c.weight=parseFloat($('#childWeight').value)||0; save(); refreshChildSelect(); alert('Datos guardados'); });
+$('#deleteChildBtn').addEventListener('click',()=>{ if(confirm('¿Eliminar este hijo?')){ delete data.children[currentChildId]; save(); if(Object.keys(data.children).length===0){ const id=genId(); data.children[id]={name:'Ejemplo',weight:12,doses:[],temps:[]}; currentChildId=id; save(); } else { currentChildId=Object.keys(data.children)[0]; } refreshChildSelect(); loadChildCfg(); refreshAll(); }});
+
+// Calculadora
+$('#calcDoseBtn').addEventListener('click',()=>{
+  const w=parseFloat($('#weightInput').value)||data.children[currentChildId].weight;
+  const med=$('#medType').value; const mg=parseFloat($('#concMg').value); const ml=parseFloat($('#concMl').value);
+  if(!w||!mg||!ml){ alert('Complete peso y concentración'); return; }
+  const conc=mg/ml; let minMg,maxMg; if(med==='Paracetamol'){ minMg=w*10; maxMg=w*15; } else { minMg=maxMg=w*10; }
+  const minMl=minMg/conc, maxMl=maxMg/conc; $('#doseResult').textContent=`${Math.round(minMg)}–${Math.round(maxMg)} mg = ${minMl.toFixed(1)}–${maxMl.toFixed(1)} ml`;
 });
-document.querySelectorAll(".tabs button").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".section").forEach(sec=>sec.classList.remove("active"));
-    document.getElementById(btn.dataset.section).classList.add("active");
-    if(btn.dataset.section==="tempSection") drawTempChart();
-  });
-});
-function loadChildConfig(){
-  if(!currentChildId) return;
-  const c=data.children[currentChildId];
-  document.getElementById("childName").value=c.name||"";
-  document.getElementById("childWeight").value=c.weight||"";
-}
-loadChildConfig();
-document.getElementById("saveChildBtn").addEventListener("click",()=>{
-  if(!currentChildId){
-    currentChildId=genId();
-    data.children[currentChildId]={name:"",weight:0,doses:[],temps:[]};
+$('#saveDoseBtn').addEventListener('click',()=>{ const txt=$('#doseResult').textContent; if(!txt){ alert('Primero calcule'); return; } data.children[currentChildId].doses.unshift({time:Date.now(),info:txt}); save(); refreshMedHistory(); });
+
+// Planificador (incluye alternancia)
+function setDefaultStart(){ const now=new Date(); const m=now.getMinutes(); const r=Math.ceil(m/15)*15; now.setMinutes(r===60?0:r); if(r===60) now.setHours(now.getHours()+1); $('#planStart').value=`${pad(now.getHours())}:${pad(now.getMinutes())}`; }
+setDefaultStart();
+$('#modeSimple').addEventListener('change',()=>{ $('#simpleBox').style.display='block'; $('#altBox').style.display='none'; });
+$('#modeAlt').addEventListener('change',()=>{ $('#simpleBox').style.display='none'; $('#altBox').style.display='block'; });
+function genPlan(hours){
+  const [hh,mm]=($('#planStart').value||'08:00').split(':').map(n=>parseInt(n||'0'));
+  let t=new Date(); t.setHours(hh,mm,0,0);
+  const mode=$('input[name="planMode"]:checked').value;
+  const rows=[];
+  if(mode==='simple'){
+    const label=$('#planLabel').value||'Medicamento'; const step=parseInt($('#planInterval').value||'6');
+    for(let p=0;p<=hours;p+=step){ rows.push([`${pad(t.getHours())}:${pad(t.getMinutes())}`,label]); t.setHours(t.getHours()+step); }
+  } else {
+    let next=$('#altStart').value; const step=parseInt($('#altStep').value||'3');
+    for(let p=0;p<=hours;p+=step){ rows.push([`${pad(t.getHours())}:${pad(t.getMinutes())}`,next]); t.setHours(t.getHours()+step); next=(next==='Ibuprofeno')?'Paracetamol':'Ibuprofeno'; }
   }
-  const c=data.children[currentChildId];
-  c.name=document.getElementById("childName").value;
-  c.weight=parseFloat(document.getElementById("childWeight").value)||0;
-  saveData(); refreshChildSelect(); alert("Datos guardados");
-});
-document.getElementById("deleteChildBtn").addEventListener("click",()=>{
-  if(confirm("¿Eliminar este hijo?")){
-    delete data.children[currentChildId]; currentChildId=null;
-    saveData(); ensureExampleChild(); refreshChildSelect(); loadChildConfig(); refreshHistories();
-  }
-});
-document.getElementById("calcDoseBtn").addEventListener("click",()=>{
-  const weight=parseFloat(document.getElementById("weightInput").value)||
-    data.children[currentChildId].weight;
-  const med=document.getElementById("medType").value;
-  const mg=parseFloat(document.getElementById("concMg").value);
-  const ml=parseFloat(document.getElementById("concMl").value);
-  if(!weight||!mg||!ml){alert("Complete peso y concentración");return;}
-  const mgPerMl=mg/ml;
-  let minMg,maxMg;
-  if(med==="Paracetamol"){minMg=weight*10;maxMg=weight*15;} else {minMg=maxMg=weight*10;}
-  const minMl=minMg/mgPerMl; const maxMl=maxMg/mgPerMl;
-  document.getElementById("doseResult").textContent=`${minMg.toFixed(0)}–${maxMg.toFixed(0)} mg = ${minMl.toFixed(1)}–${maxMl.toFixed(1)} ml`;
-});
-document.getElementById("saveDoseBtn").addEventListener("click",()=>{
-  const res=document.getElementById("doseResult").textContent;
-  if(!res){alert("Primero calcule la dosis");return;}
-  data.children[currentChildId].doses.unshift({time:Date.now(),info:res});
-  saveData(); refreshHistories();
-});
-document.getElementById("genPlanBtn").addEventListener("click",()=>{
-  const start=document.getElementById("planStart").value;
-  const intv=parseInt(document.getElementById("planInterval").value);
-  if(!start||!intv){alert("Complete hora e intervalo");return;}
-  const [h,m]=start.split(":").map(Number);
-  const out=[]; let t=new Date(); t.setHours(h,m,0,0);
-  for(let i=0;i<24;i+=intv){
-    out.push(t.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}));
-    t.setHours(t.getHours()+intv);
-  }
-  document.getElementById("planOutput").innerHTML=out.join("<br>");
-});
-document.getElementById("saveTempBtn").addEventListener("click",()=>{
-  const val=parseFloat(document.getElementById("tempValue").value);
-  const com=document.getElementById("tempComment").value;
-  if(!val){alert("Ingrese la temperatura");return;}
-  data.children[currentChildId].temps.unshift({time:Date.now(),value:val,comment:com});
-  saveData();
-  document.getElementById("tempValue").value=""; document.getElementById("tempComment").value="";
-  refreshHistories(); drawTempChart();
-});
-function refreshHistories(){
-  const medHistDiv=document.getElementById("medHistory");
-  medHistDiv.innerHTML="<h3>Historial de medicación</h3>";
-  data.children[currentChildId].doses.forEach(d=>{
-    const div=document.createElement("div");
-    div.className="history-item";
-    div.textContent=`${formatDateTime(d.time)} - ${d.info}`;
-    medHistDiv.appendChild(div);
-  });
-  const tempHistDiv=document.getElementById("tempHistory");
-  tempHistDiv.innerHTML="<h3>Historial de temperatura</h3>";
-  data.children[currentChildId].temps.forEach(t=>{
-    const div=document.createElement("div");
-    div.className=`history-item ${tempClass(t.value)}`;
-    div.textContent=`${formatDateTime(t.time)} - ${t.value}°C - ${t.comment||""}`;
-    tempHistDiv.appendChild(div);
-  });
+  let html='<table class="table"><thead><tr><th>Hora</th><th>Qué dar</th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')+'</tbody></table>';
+  $('#planOutput').innerHTML=html;
 }
-refreshHistories();
-let tempChart;
-function drawTempChart(){
-  const ctx=document.getElementById("tempChart").getContext("2d");
-  const temps=data.children[currentChildId].temps.slice().reverse();
-  const labels=temps.map(t=>new Date(t.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}));
-  const values=temps.map(t=>t.value);
-  const colors=temps.map(t=>tempColor(t.value));
-  if(tempChart) tempChart.destroy();
-  tempChart=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels:labels,
-      datasets:[{
-        label:'Temperatura °C',
-        data:values,
-        borderColor:'black',
-        pointBackgroundColor:colors,
-        backgroundColor:'rgba(0,0,0,0.05)'
-      }]
-    },
-    options:{responsive:true,scales:{y:{beginAtZero:false}}}
-  });
-}
-</script>
-</body>
+$('#genPlanBtn').addEventListener('click',()=>genPlan(parseInt($('#planDuration').value||'24')));
+$('#genPlan48').addEventListener('click',()=>genPlan(48));
+
+// Temperatura
+$('#saveTempBtn').addEventListener('click',()=>{ const v=parseFloat($('#tempValue').value); if(!v){ alert('Ingrese temperatura'); return; } const c=$('#tempComment').value; data.children[currentChildId].temps.unshift({time:Date.now(),value:v,comment:c}); save(); $('#tempValue').value=''; $('#tempComment').value=''; refreshTempHistory(); drawTempChart(); });
+
+// Historiales
+function refreshMedHistory(){ const box=$('#medHistory'); box.innerHTML='<h3>Historial de medicación</h3>'+(data.children[currentChildId].doses.map(d=>`<div class="history-item">${fmtDT(d.time)} — ${d.info}</div>`).join('')||'<div class="small">Sin registros</div>'); }
+function refreshTempHistory(){ const list=data.children[currentChildId].temps; const box=$('#tempHistory'); box.innerHTML='<h3>Historial de temperatura</h3>'+(list.map(t=>`<div class="history-item ${tempClass(t.value)}">${fmtDT(t.time)} — <b>${t.value.toFixed(1)}°C</b> ${t.comment?('— '+t.comment):''}</div>`).join('')||'<div class="small">Sin registros</div>'); }
+function refreshAll(){ refreshMedHistory(); refreshTempHistory(); }
+refreshAll();
+
+// Chart
+let tempChart=null;
+function drawTempChart(){ const ctx=$('#tempChart').getContext('2d'); const arr=data.children[currentChildId].temps.slice().reverse(); const labels=arr.map(t=>new Date(t.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})); const vals=arr.map(t=>t.value); const colors=arr.map(t=>tempColor(t.value)); if(tempChart) tempChart.destroy(); tempChart=new Chart(ctx,{ type:'line', data:{ labels, datasets:[{ label:'Temperatura °C', data:vals, borderColor:'#0f172a', backgroundColor:'rgba(15,23,42,.06)', pointBackgroundColor:colors, pointRadius:4, tension:.3 }]}, options:{ responsive:true, plugins:{legend:{display:true}}, scales:{ y:{ beginAtZero:false } } }); }
+</script></body>
 </html>
